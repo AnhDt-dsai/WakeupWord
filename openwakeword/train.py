@@ -609,6 +609,15 @@ if __name__ == '__main__':
         default="False",
         required=False
     )
+
+    parser.add_argument(
+        "--method_generate_clips",
+        help="Execute the synthetic data generation process based on the method specified in the config file (`text_to_speech` or `speech_to_speech`)",
+        default="text_to_speech",
+        required=False,
+        type=str,
+    )
+
     parser.add_argument(
         "--augment_clips",
         help="Execute the synthetic data augmentation process",
@@ -659,7 +668,7 @@ if __name__ == '__main__':
     for background_path, duplication_rate in zip(config["background_paths"], config["background_paths_duplication_rate"]):
         background_paths.extend([i.path for i in os.scandir(background_path)]*duplication_rate)
 
-    if args.generate_clips is True:
+    if args.generate_clips is True and args.method_generate_clips == "text_to_speech":
         # Generate positive clips for training
         logging.info("#"*50 + "\nGenerating positive clips for training\n" + "#"*50)
         if not os.path.exists(positive_train_output_dir):
@@ -734,6 +743,58 @@ if __name__ == '__main__':
             torch.cuda.empty_cache()
         else:
             logging.warning(f"Skipping generation of negative clips for testing, as ~{config['n_samples_val']} already exist")
+
+    if args.generate_clips is True and args.method_generate_clips == "speech_to_speech":
+        # Generate positive clips for training
+        logging.info("#"*50 + "\nGenerating positive clips for training\n" + "#"*50)
+        if not os.path.exists(positive_train_output_dir):
+            os.mkdir(positive_train_output_dir)
+        n_current_samples = len(os.listdir(positive_train_output_dir))
+        if n_current_samples == 0:
+            logging.warning("No positive training samples found")
+        if n_current_samples <= 0.95*config["n_samples"]:
+            import torch
+            import torchaudio as ta
+
+            from chatterbox.vc import ChatterboxVC
+            from utils import voice_clone
+
+            # Automatically detect the best available device
+            if torch.cuda.is_available():
+                device = "cuda"
+            elif torch.backends.mps.is_available():
+                device = "mps"
+            else:
+                device = "cpu"
+            print(f"Using device: {device}")
+            model = ChatterboxVC.from_pretrained(device)        
+            voice_clone(vc_model=model, voice_path="data/sample", sample_folder="data/voicesample/speaker", save_path=positive_train_output_dir,)
+            torch.cuda.empty_cache()
+        else:
+            logging.warning(f"Skipping generation of positive clips for training, as ~{config['n_samples']} already exist")
+
+        # Generate positive clips for testing
+        logging.info("#"*50 + "\nGenerating positive clips for testing\n" + "#"*50)
+        if n_current_samples <= 0.95*config["n_samples"]:
+            import torch
+            import torchaudio as ta
+
+            from chatterbox.vc import ChatterboxVC
+            from utils import voice_clone
+
+            # Automatically detect the best available device
+            if torch.cuda.is_available():
+                device = "cuda"
+            elif torch.backends.mps.is_available():
+                device = "mps"
+            else:
+                device = "cpu"
+            print(f"Using device: {device}")
+            model = ChatterboxVC.from_pretrained(device)        
+            voice_clone(vc_model=model, voice_path="data/sample", sample_folder="data/voicesample/dev_speaker", save_path=positive_test_output_dir,)
+            torch.cuda.empty_cache()
+        else:
+            logging.warning(f"Skipping generation of positive clips for training, as ~{config['n_samples']} already exist")
 
     # Set the total length of the training clips based on the ~median generated clip duration, rounding to the nearest 1000 samples
     # and setting to 32000 when the median + 750 ms is close to that, as it's a good default value

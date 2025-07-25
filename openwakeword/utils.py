@@ -686,3 +686,42 @@ def re_arg(kwarg_map):
             return func(*args, **new_kwargs)
         return wrapped
     return decorator
+
+def download_voice_sample(
+        target_directory: str = os.path.join(pathlib.Path(__file__).parent.resolve(), "resources", "voice_samples")
+):
+    """
+    Download a sample voice recording from the openWakeWord GitHub repository.
+
+    Args:
+        target_directory (str): The directory to save the voice sample to. Defaults to the install location
+                                of openWakeWord (i.e., the `resources/voice_samples` directory).
+    Returns:
+        None
+    """
+    if not os.path.exists(target_directory):
+        os.makedirs(target_directory)
+    download_file(openwakeword.VOICE_SAMPLE_URL, target_directory)
+
+def voice_clone(vc_model, voice_path, sample_folder, save_path):
+    """
+    Function to clone a voice using the provided voice cloning model and a sample voice recording.
+    args:
+        vc_model: The voice cloning model to use for cloning the voice
+        voice: The voice sample to clone
+        sample_folder: The folder containing the sample voice recording
+        save_path: The path to save the cloned voice recording
+    """
+    import torchaudio as ta
+    for sample in os.listdir(voice_path):
+        if sample.endswith(".wav") or sample.endswith(".mp3"):
+            voice_path = os.path.join(voice_path, sample)
+            for file in os.listdir(sample_folder):
+                if file.endswith(".wav") or file.endswith(".mp3"):
+                    target_voice_path = os.path.join(sample_folder, file)
+                    wav = vc_model.generate(
+                        audio=voice_path,
+                        target_voice_path=target_voice_path,
+                    )
+                    ta.save(os.path.join(save_path, voice_path, target_voice_path,".wav"), wav, vc_model.sr)
+

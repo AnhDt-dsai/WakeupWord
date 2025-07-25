@@ -898,7 +898,7 @@ def generate_adversarial_texts(input_text: str, N: int, include_partial_phrase: 
     Generate adversarial words and phrases based on phoneme overlap.
     Currently only works for english texts.
     Note that homophones are excluded, as this wouldn't actually be an adversarial example for the input text.
-
+ 
     Args:
         input_text (str): The target text for adversarial phrases
         N (int): The total number of adversarial texts to return. Uses sampling,
