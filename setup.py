@@ -34,7 +34,8 @@ setuptools.setup(
         'scipy>=1.3,<2',
         'scikit-learn>=1,<2',
         'requests>=2.0,<3',
-        'datasets>=4.0.0'
+        'datasets>=4.0.0',
+        'chatterbox-tts'
     ],
     extras_require={
         'test': [
