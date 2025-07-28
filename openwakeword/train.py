@@ -668,7 +668,7 @@ if __name__ == '__main__':
     for background_path, duplication_rate in zip(config["background_paths"], config["background_paths_duplication_rate"]):
         background_paths.extend([i.path for i in os.scandir(background_path)]*duplication_rate)
 
-    if args.generate_clips is True and args.method_generate_clips == "text_to_speech":
+    if args.generate_clips is True and config["method_generate_clips"] == "text_to_speech":
         # Generate positive clips for training
         logging.info("#"*50 + "\nGenerating positive clips for training\n" + "#"*50)
         if not os.path.exists(positive_train_output_dir):
@@ -744,7 +744,7 @@ if __name__ == '__main__':
         else:
             logging.warning(f"Skipping generation of negative clips for testing, as ~{config['n_samples_val']} already exist")
 
-    if args.generate_clips is True and args.method_generate_clips == "speech_to_speech":
+    if args.generate_clips is True and config["method_generate_clips"] == "speech_to_speech":
         # Generate positive clips for training
         logging.info("#"*50 + "\nGenerating positive clips for training\n" + "#"*50)
         if not os.path.exists(positive_train_output_dir):
