@@ -775,6 +775,8 @@ if __name__ == '__main__':
 
         # Generate positive clips for testing
         logging.info("#"*50 + "\nGenerating positive clips for testing\n" + "#"*50)
+        if not os.path.exists(positive_test_output_dir):
+            os.mkdir(positive_test_output_dir)
         if n_current_samples <= 0.95*config["n_samples"]:
             import torch
             import torchaudio as ta
