@@ -852,12 +852,19 @@ if __name__ == '__main__':
                                             output_file=os.path.join(feature_save_dir, "positive_features_train.npy"),
                                             device="gpu" if torch.cuda.is_available() else "cpu",
                                             ncpu=n_cpus if not torch.cuda.is_available() else 1)
-
-            compute_features_from_generator(negative_clips_train_generator, n_total=len(os.listdir(negative_train_output_dir)),
-                                            clip_duration=config["total_length"],
-                                            output_file=os.path.join(feature_save_dir, "negative_features_train.npy"),
-                                            device="gpu" if torch.cuda.is_available() else "cpu",
-                                            ncpu=n_cpus if not torch.cuda.is_available() else 1)
+            if len(os.listdir(negative_train_output_dir)) == 0:
+                logging.warning("No negative training samples found, skipping feature generation for negative training samples")    
+            else:
+                compute_features_from_generator(negative_clips_train_generator, n_total=len(os.listdir(negative_train_output_dir)),
+                                                clip_duration=config["total_length"],
+                                                output_file=os.path.join(feature_save_dir, "negative_features_train.npy"),
+                                                device="gpu" if torch.cuda.is_available() else "cpu",
+                                                ncpu=n_cpus if not torch.cuda.is_available() else 1)
+                compute_features_from_generator(negative_clips_test_generator, n_total=len(os.listdir(negative_test_output_dir)),
+                                                clip_duration=config["total_length"],
+                                                output_file=os.path.join(feature_save_dir, "negative_features_test.npy"),
+                                                device="gpu" if torch.cuda.is_available() else "cpu",
+                                                ncpu=n_cpus if not torch.cuda.is_available() else 1)
 
             compute_features_from_generator(positive_clips_test_generator, n_total=len(os.listdir(positive_test_output_dir)),
                                             clip_duration=config["total_length"],
@@ -865,11 +872,7 @@ if __name__ == '__main__':
                                             device="gpu" if torch.cuda.is_available() else "cpu",
                                             ncpu=n_cpus if not torch.cuda.is_available() else 1)
 
-            compute_features_from_generator(negative_clips_test_generator, n_total=len(os.listdir(negative_test_output_dir)),
-                                            clip_duration=config["total_length"],
-                                            output_file=os.path.join(feature_save_dir, "negative_features_test.npy"),
-                                            device="gpu" if torch.cuda.is_available() else "cpu",
-                                            ncpu=n_cpus if not torch.cuda.is_available() else 1)
+            
         else:
             logging.warning("Openwakeword features already exist, skipping data augmentation and feature generation")
 
@@ -902,7 +905,11 @@ if __name__ == '__main__':
 
         # Add generated positive and adversarial negative clips to the feature data files dictionary
         config["feature_data_files"]['positive'] = os.path.join(feature_save_dir, "positive_features_train.npy")
-        config["feature_data_files"]['adversarial_negative'] = os.path.join(feature_save_dir, "negative_features_train.npy")
+        if not os.path.exists(os.path.join(feature_save_dir, "negative_features_train.npy")):
+            logging.warning("No negative training samples found, skipping loadding for negative training samples")
+
+        else:
+            config["feature_data_files"]['adversarial_negative'] = os.path.join(feature_save_dir, "negative_features_train.npy")
 
         # Make PyTorch data loaders for training and validation data
         batch_generator = mmap_batch_generator(
@@ -936,16 +943,29 @@ if __name__ == '__main__':
         )
 
         X_val_pos = np.load(os.path.join(feature_save_dir, "positive_features_test.npy"))
-        X_val_neg = np.load(os.path.join(feature_save_dir, "negative_features_test.npy"))
-        labels = np.hstack((np.ones(X_val_pos.shape[0]), np.zeros(X_val_neg.shape[0]))).astype(np.float32)
+        if not os.path.exists(os.path.join(feature_save_dir, "negative_features_test.npy")):
+            logging.warning("No negative testing samples found, skipping loadding for negative testing samples")
+            labels = np.hstack((np.ones(X_val_pos.shape[0]))).astype(np.float32)
 
-        X_val = torch.utils.data.DataLoader(
-            torch.utils.data.TensorDataset(
-                torch.from_numpy(np.vstack((X_val_pos, X_val_neg))),
-                torch.from_numpy(labels)
-                ),
-            batch_size=len(labels)
-        )
+            X_val = torch.utils.data.DataLoader(
+                torch.utils.data.TensorDataset(
+                    torch.from_numpy(np.vstack((X_val_pos))),
+                    torch.from_numpy(labels)
+                    ),
+                batch_size=len(labels)
+            )
+        else:
+            X_val_neg = np.load(os.path.join(feature_save_dir, "negative_features_test.npy"))
+            labels = np.hstack((np.ones(X_val_pos.shape[0]), np.zeros(X_val_neg.shape[0]))).astype(np.float32)
+
+            X_val = torch.utils.data.DataLoader(
+                torch.utils.data.TensorDataset(
+                    torch.from_numpy(np.vstack((X_val_pos, X_val_neg))),
+                    torch.from_numpy(labels)
+                    ),
+                batch_size=len(labels)
+            )
+
 
         # Run auto training
         best_model = oww.auto_train(
