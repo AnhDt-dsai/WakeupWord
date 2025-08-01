@@ -54,6 +54,7 @@ setuptools.setup(
                     'mutagen>=1.46.0,<2',
                     'torch>=2.6.0,<3',
                     'torchaudio>=2.6.0',
+                    'torchvision>=0.22.1',
                     'torchinfo>=1.8.0,<2',
                     'torchmetrics>=0.11.4,<1',
                     'speechbrain>=0.5.14,<1',

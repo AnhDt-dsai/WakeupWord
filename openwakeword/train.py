@@ -772,7 +772,12 @@ if __name__ == '__main__':
             torch.cuda.empty_cache()
         else:
             logging.warning(f"Skipping generation of positive clips for training, as ~{config['n_samples']} already exist")
-
+        # Negative train
+        if not os.path.exists(negative_train_output_dir):
+            os.mkdir(negative_train_output_dir)
+        # Negative test
+        if not os.path.exists(negative_test_output_dir):
+            os.mkdir(negative_test_output_dir)
         # Generate positive clips for testing
         logging.info("#"*50 + "\nGenerating positive clips for testing\n" + "#"*50)
         if not os.path.exists(positive_test_output_dir):
@@ -897,7 +902,12 @@ if __name__ == '__main__':
         # Create label transforms as needed for model (currently only supports binary classification models)
         data_transforms = {key: f for key in config["feature_data_files"].keys()}
         label_transforms = {}
-        for key in ["positive"] + list(config["feature_data_files"].keys()) + ["adversarial_negative"]:
+        if not os.path.exists(os.path.join(feature_save_dir, "negative_features_train.npy")):
+            config["batch_n_per_class"].pop("adversarial_negative")
+            lst_keys = ["positive"] + list(config["feature_data_files"].keys())
+        else:
+            lst_keys = ["positive"] + list(config["feature_data_files"].keys()) + ["adversarial_negative"]
+        for key in lst_keys:
             if key == "positive":
                 label_transforms[key] = lambda x: [1 for i in x]
             else:
@@ -911,6 +921,7 @@ if __name__ == '__main__':
         else:
             config["feature_data_files"]['adversarial_negative'] = os.path.join(feature_save_dir, "negative_features_train.npy")
 
+        
         # Make PyTorch data loaders for training and validation data
         batch_generator = mmap_batch_generator(
             config["feature_data_files"],
@@ -945,11 +956,11 @@ if __name__ == '__main__':
         X_val_pos = np.load(os.path.join(feature_save_dir, "positive_features_test.npy"))
         if not os.path.exists(os.path.join(feature_save_dir, "negative_features_test.npy")):
             logging.warning("No negative testing samples found, skipping loadding for negative testing samples")
-            labels = np.hstack((np.ones(X_val_pos.shape[0]))).astype(np.float32)
+            labels = np.hstack((np.ones(X_val_pos.shape[0]), np.ones(X_val_pos.shape[0]))).astype(np.float32)
 
             X_val = torch.utils.data.DataLoader(
                 torch.utils.data.TensorDataset(
-                    torch.from_numpy(np.vstack((X_val_pos))),
+                    torch.from_numpy(np.vstack((X_val_pos, X_val_pos))),
                     torch.from_numpy(labels)
                     ),
                 batch_size=len(labels)

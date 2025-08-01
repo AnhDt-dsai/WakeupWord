@@ -723,5 +723,5 @@ def voice_clone(vc_model, voice_path, sample_folder, save_path):
                         audio=target_voice_path,   # The voice sample to clone 
                         target_voice_path=audio,    # The audio file to clone the voice to
                     )
-                    ta.save(save_path +"/"+ sample.split(".")[0]+"_"+ file.split(".")[0]+".wav", wav, vc_model.sr)
+                    ta.save(save_path +"/"+ sample.split(".")[0]+"_"+ file.split(".")[0]+".wav", wav, 16000)#vc_model.sr)
 
