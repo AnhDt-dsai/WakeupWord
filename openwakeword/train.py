@@ -768,7 +768,7 @@ if __name__ == '__main__':
                 device = "cpu"
             print(f"Using device: {device}")
             model = ChatterboxVC.from_pretrained(device)        
-            voice_clone(vc_model=model, voice_path="data/sample", sample_folder="data/voicesample/speaker", save_path=positive_train_output_dir,)
+            voice_clone(vc_model=model, voice_path="/content/openwakeword/data/sample", sample_folder="/content/openwakeword/data/voicesample/speaker", save_path=positive_train_output_dir,)
             torch.cuda.empty_cache()
         else:
             logging.warning(f"Skipping generation of positive clips for training, as ~{config['n_samples']} already exist")
@@ -798,7 +798,7 @@ if __name__ == '__main__':
                 device = "cpu"
             print(f"Using device: {device}")
             model = ChatterboxVC.from_pretrained(device)        
-            voice_clone(vc_model=model, voice_path="data/sample", sample_folder="data/voicesample/dev_speaker", save_path=positive_test_output_dir,)
+            voice_clone(vc_model=model, voice_path="/content/openwakeword/data/sample", sample_folder="/content/openwakeword/data/voicesample/dev_speaker", save_path=positive_test_output_dir,)
             torch.cuda.empty_cache()
         else:
             logging.warning(f"Skipping generation of positive clips for training, as ~{config['n_samples']} already exist")
