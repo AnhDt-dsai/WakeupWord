@@ -269,6 +269,7 @@ class Model(nn.Module):
         val_set_hrs = 11.3
 
         # Sequence 1
+        print(f"Starting training with {len(X_train)} training examples and {len(X_val)} validation examples")
         logging.info("#"*50 + "\nStarting training sequence 1...\n" + "#"*50)
         lr = 0.0001
         weights = np.linspace(1, max_negative_weight, int(steps)).tolist()
@@ -513,7 +514,8 @@ class Model(nn.Module):
             if step_ndx in val_steps and step_ndx > 1 and false_positive_val_data is not None:
                 # Get false positives per hour with false positive data
                 val_fp = 0
-                for val_step_ndx, data in enumerate(false_positive_val_data):
+                
+                for val_step_ndx, data in tqdm(enumerate(false_positive_val_data), desc= "Run validation and log validation metrics"):
                     with torch.no_grad():
                         x_val, y_val = data[0].to(self.device), data[1].to(self.device)
                         val_predictions = self.model(x_val)
@@ -525,7 +527,7 @@ class Model(nn.Module):
             if step_ndx in val_steps and step_ndx > 1 and positive_test_clips is not None:
                 tp = 0
                 fn = 0
-                for val_step_ndx, data in enumerate(positive_test_clips):
+                for val_step_ndx, data in tqdm(enumerate(positive_test_clips), desc="Get recall on test clips"):
                     with torch.no_grad():
                         x_val = data[0].to(self.device)
                         batch = []
@@ -541,7 +543,7 @@ class Model(nn.Module):
 
             if step_ndx in val_steps and step_ndx > 1 and X_val is not None:
                 # Get metrics for balanced test examples of positive and negative clips
-                for val_step_ndx, data in enumerate(X_val):
+                for val_step_ndx, data in tqdm(enumerate(X_val), desc="Get metrics for balanced test examples of positive and negative clips"):
                     with torch.no_grad():
                         x_val, y_val = data[0].to(self.device), data[1].to(self.device)
                         val_predictions = self.model(x_val)
@@ -782,6 +784,7 @@ if __name__ == '__main__':
         logging.info("#"*50 + "\nGenerating positive clips for testing\n" + "#"*50)
         if not os.path.exists(positive_test_output_dir):
             os.mkdir(positive_test_output_dir)
+        n_current_samples = len(os.listdir(positive_test_output_dir))
         if n_current_samples <= 0.95*config["n_samples"]:
             import torch
             import torchaudio as ta
