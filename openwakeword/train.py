@@ -269,7 +269,6 @@ class Model(nn.Module):
         val_set_hrs = 11.3
 
         # Sequence 1
-        print(f"Starting training with {len(X_train)} training examples and {len(X_val)} validation examples")
         logging.info("#"*50 + "\nStarting training sequence 1...\n" + "#"*50)
         lr = 0.0001
         weights = np.linspace(1, max_negative_weight, int(steps)).tolist()
@@ -785,7 +784,7 @@ if __name__ == '__main__':
         if not os.path.exists(positive_test_output_dir):
             os.mkdir(positive_test_output_dir)
         n_current_samples = len(os.listdir(positive_test_output_dir))
-        if n_current_samples <= 0.95*config["n_samples"]:
+        if n_current_samples <= 0.95*config["n_samples_val"]:
             import torch
             import torchaudio as ta
 
@@ -804,7 +803,7 @@ if __name__ == '__main__':
             voice_clone(vc_model=model, voice_path="/content/openwakeword/data/sample", sample_folder="/content/openwakeword/data/voicesample/dev_speaker", save_path=positive_test_output_dir,)
             torch.cuda.empty_cache()
         else:
-            logging.warning(f"Skipping generation of positive clips for training, as ~{config['n_samples']} already exist")
+            logging.warning(f"Skipping generation of positive clips for testing, as ~{config['n_samples_val']} already exist")
 
     # Set the total length of the training clips based on the ~median generated clip duration, rounding to the nearest 1000 samples
     # and setting to 32000 when the median + 750 ms is close to that, as it's a good default value
@@ -955,6 +954,7 @@ if __name__ == '__main__':
             torch.utils.data.TensorDataset(torch.from_numpy(X_val_fp), torch.from_numpy(X_val_fp_labels)),
             batch_size=len(X_val_fp_labels)
         )
+        print(len(X_val_fp))
 
         X_val_pos = np.load(os.path.join(feature_save_dir, "positive_features_test.npy"))
         if not os.path.exists(os.path.join(feature_save_dir, "negative_features_test.npy")):
